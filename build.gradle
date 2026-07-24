@@ -1,0 +1,104 @@
+plugins {
+    id 'eclipse'
+    id 'idea'
+    id 'net.minecraftforge.gradle' version '[6.0.24,6.2)'
+}
+
+version = "${mod_version}"
+group = "${mod_group_id}"
+
+base {
+    archivesName = "${mod_id}"
+}
+
+// Forge 1.20.1 builds and runs on Java 17.
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(17)
+}
+
+println "Java: ${System.getProperty 'java.version'}, JVM: ${System.getProperty 'java.vm.version'} (${System.getProperty 'java.vendor'})"
+
+minecraft {
+    mappings channel: mapping_channel, version: mapping_version
+
+    // Recommended for a smoother dev launch.
+    copyIdeResources = true
+
+    runs {
+        configureEach {
+            workingDirectory project.file('run')
+            property 'forge.logging.markers', 'REGISTRIES'
+            property 'forge.logging.console.level', 'info'
+            mods {
+                "${mod_id}" {
+                    source sourceSets.main
+                }
+            }
+        }
+        client {
+            property 'forge.enabledGameTestNamespaces', mod_id
+        }
+        server {
+            property 'forge.enabledGameTestNamespaces', mod_id
+            args '--nogui'
+        }
+    }
+}
+
+// Include any generated resources (none by default, kept for parity with the MDK).
+sourceSets.main.resources { srcDir 'src/generated/resources' }
+
+// Expand ${...} placeholders in mods.toml / pack.mcmeta from gradle.properties.
+tasks.named('processResources', ProcessResources).configure {
+    var replaceProperties = [
+        mod_id           : mod_id,
+        mod_name         : mod_name,
+        mod_license      : mod_license,
+        mod_version      : mod_version,
+        mod_authors      : mod_authors,
+        mod_description  : mod_description,
+        minecraft_version: minecraft_version,
+        forge_version    : forge_version,
+    ]
+    inputs.properties replaceProperties
+    filesMatching(['META-INF/mods.toml', 'pack.mcmeta']) {
+        expand replaceProperties
+    }
+}
+
+repositories {
+    // Local jars — put the Baritone Forge API jar here (see README / gradle.properties).
+    flatDir { dirs 'libs' }
+    // Meteor maven hosts a maintained Baritone build, useful as a fallback source.
+    maven { url = 'https://maven.meteordev.org/releases' }
+    maven { url = 'https://maven.meteordev.org/snapshots' }
+    mavenCentral()
+}
+
+dependencies {
+    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+
+    // Baritone is present at runtime as a separate mod; we only need its API to
+    // compile against. `fg.deobf` remaps the jar to this workspace's mappings.
+    // The artifact is resolved from ./libs via the flatDir repository above.
+    compileOnly fg.deobf(":baritone-api-forge:${baritone_version}")
+}
+
+tasks.named('jar', Jar).configure {
+    manifest {
+        attributes([
+            'Specification-Title'     : mod_id,
+            'Specification-Vendor'    : mod_authors,
+            'Specification-Version'   : '1',
+            'Implementation-Title'    : project.name,
+            'Implementation-Version'  : project.jar.archiveVersion,
+            'Implementation-Vendor'   : mod_authors,
+            'Implementation-Timestamp': new Date().format("yyyy-MM-dd'T'HH:mm:ssZ")
+        ])
+    }
+    finalizedBy 'reobfJar'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
