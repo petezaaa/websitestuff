@@ -165,6 +165,10 @@ is the single place you'd adjust.
 
 ## Building it
 
+> **Just want to get it running?** Follow [`SETUP.md`](SETUP.md) — a Windows-first,
+> step-by-step guide with helper scripts (`setup.ps1` / `setup.sh`) that check
+> Java, build the mod, and copy it into your `mods/` folder.
+
 ### Requirements
 - **JDK 17** (Forge 1.20.1 targets Java 17)
 - The Baritone **Forge 1.20.1** jars (see below)
