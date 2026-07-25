@@ -10,6 +10,7 @@ import com.baritonebot.task.MineTask;
 import com.baritonebot.task.SmeltTask;
 import com.baritonebot.task.Task;
 import com.baritonebot.task.TaskManager;
+import com.baritonebot.task.AutoPlayTask;
 import com.baritonebot.task.DepositTask;
 import com.baritonebot.task.EquipArmorTask;
 import com.baritonebot.task.GatherRunTask;
@@ -77,6 +78,9 @@ public final class CommandParser {
                 case "chestlog": handleChests(); break;
                 case "tools":
                 case "progress": TaskManager.start(new ProgressionTask()); break;
+                case "play":
+                case "sim":
+                case "autoplay": handlePlay(t); break;
                 case "auto":     handleAuto(t); break;
                 case "drop":     handleDrop(t, player); break;
                 case "equip":    handleEquip(t, player); break;
@@ -245,6 +249,11 @@ public final class CommandParser {
             p.getX(), p.getY(), p.getZ()));
     }
 
+    private static void handlePlay(String[] t) {
+        double hours = t.length >= 2 ? Double.parseDouble(t[1]) : 24.0;
+        TaskManager.start(new AutoPlayTask(hours));
+    }
+
     private static void handleAuto(String[] t) {
         if (t.length < 2) throw new IllegalArgumentException("Usage: /bot auto <on|off>");
         boolean on = t[1].equalsIgnoreCase("on") || t[1].equalsIgnoreCase("true") || t[1].equalsIgnoreCase("enable");
@@ -294,6 +303,7 @@ public final class CommandParser {
             "§e/bot withdraw <item> [n] §7- take items from nearest chest",
             "§e/bot chests §7- list logged chest contents",
             "§e/bot tools §7- auto-progress wood → stone → iron → diamond tools",
+            "§e/bot play [hours] §7- free-play: gather, craft, build random stuff, fight (default 24h)",
             "§e/bot auto <on|off> §7- eat, fight mobs, respawn, protect Mending tools",
             "§e/bot drop <item|all> §7- drop items",
             "§e/bot equip <item> §7- hold an item",

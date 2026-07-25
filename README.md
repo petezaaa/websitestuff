@@ -37,6 +37,7 @@ single `/bot` command that ties everything together.
 | `/bot withdraw <item> [n]` | Take items from nearest chest | Custom |
 | `/bot chests` | List logged chest contents | Custom |
 | `/bot tools` | Auto-progress wood → stone → iron → diamond tools | Composed |
+| `/bot play [hours]` | Free-play: gather, craft, build random stuff, fight, explore | Composed |
 | `/bot auto <on\|off>` | Eat, fight mobs, respawn, protect Mending tools | Guardians |
 | `/bot drop <item\|all>` | Drop items | — |
 | `/bot equip <item>` | Hold an item | — |
@@ -73,6 +74,24 @@ position and contents are recorded to `<gameDir>/baritonebot/chestlog.txt`.
 **Tool progression** — `/bot tools` chains mine/craft/smelt steps to go from
 nothing to a full set of diamond tools (wood → stone → iron → diamond). Turn on
 `/bot auto on` first so it survives the trip.
+
+**Free-play / "AI player" mode** — `/bot play [hours]` (default **24h**) turns the
+bot loose to behave like a player: it keeps itself alive (auto mode is enabled
+automatically) and, whenever it's idle, picks a human-like activity based on its
+inventory plus randomness:
+- gather wood when it's low,
+- craft a pickaxe if it doesn't have one,
+- mine cobblestone/stone,
+- **build a random structure** out of whatever block it has the most of,
+- hunt nearby mobs,
+- or wander and explore.
+
+The random structures are generated procedurally (pillars, walls, platforms,
+cube frames, pyramids, huts, staircases, block "sculptures"), written to a
+temporary schematic in `<gameDir>/baritonebot/generated/`, and built by
+Baritone. Each decision is announced in chat (`[Free-play] build a random hut`),
+so you can leave it running and watch what it decides to make over time. Stop any
+time with `/bot stop`.
 
 ## Redstone & schematics
 
