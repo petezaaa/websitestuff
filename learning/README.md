@@ -25,13 +25,16 @@ below before expecting it to speedrun anything.
   automatically, so it "learns as it goes" across runs.
 
 ```
-env.py     MineRL wrappers: grayscale POV, frame-stack, discrete actions
-model.py   CNN actor-critic (policy + 2 value heads)
-rnd.py     Random Network Distillation (intrinsic reward)
-utils.py   running mean/std normalisation
-config.py  all hyper-parameters
-train.py   rollout + PPO/RND update loop, checkpoints, TensorBoard
-play.py    load a checkpoint and watch it act
+env.py                 MineRL wrappers + human-action -> discrete mapping
+model.py               CNN actor-critic (policy + 2 value heads)
+rnd.py                 Random Network Distillation (intrinsic reward)
+utils.py               running mean/std normalisation
+device.py              GPU auto-detect (CUDA / AMD ROCm / DirectML / CPU)
+config.py              all hyper-parameters
+train.py               rollout + PPO/RND update loop, checkpoints, TensorBoard
+behavioral_cloning.py  warm-start the policy from human demo data
+play.py                load a checkpoint and watch it act
+check_gpu.py           verify torch sees & can compute on your GPU
 ```
 
 ## Setup
@@ -122,6 +125,29 @@ Good first environments:
 - `MineRLTreechop-v0` — simplest, quickest signal that learning works.
 - `MineRLBasaltFindCave-v0` — open world, great for pure curiosity.
 - `MineRLObtainDiamondShovel-v0` — long-horizon task with sparse reward.
+
+## Warm-start from human demos (behavioral cloning)
+
+Learning everything from scratch is slow. MineRL ships **human demonstration
+data**; cloning it first gives the agent sensible behaviour to build on, then
+RL + curiosity refine it. This is the single biggest speed-up you can add.
+
+```bash
+# 1) download the demos for your env (a few GB, one time)
+python -m minerl.data.download --environment MineRLTreechop-v0
+
+# 2) clone a policy from the humans
+python behavioral_cloning.py --env MineRLTreechop-v0 --epochs 2
+
+# 3) reinforce the cloned policy (curiosity + reward take over)
+python train.py --env MineRLTreechop-v0 --init-from checkpoints/bc_policy.pt
+```
+
+`behavioral_cloning.py` maps each human action to our discrete action set and
+trains the policy with supervised cross-entropy. `--init-from` loads those
+weights into `train.py` (RND and the value heads then train fresh). Works with
+v0.4-style envs whose demo actions are button flags + a `camera` delta
+(Treechop, ObtainDiamond, BASALT FindCave).
 
 Everything (env id, learning rate, curiosity weight, rollout size, …) is in
 `config.py` or overridable via `train.py` flags.

@@ -37,6 +37,8 @@ def parse_args() -> Config:
     p.add_argument("--lr", type=float, default=cfg.learning_rate)
     p.add_argument("--seed", type=int, default=cfg.seed)
     p.add_argument("--no-resume", action="store_true")
+    p.add_argument("--init-from", default=cfg.init_from,
+                   help="Warm-start policy weights from a checkpoint (e.g. behavioral cloning).")
     args = p.parse_args()
     cfg.env_id = args.env
     cfg.device = args.device
@@ -44,6 +46,7 @@ def parse_args() -> Config:
     cfg.rollout_steps = args.rollout_steps
     cfg.learning_rate = args.lr
     cfg.seed = args.seed
+    cfg.init_from = args.init_from
     if args.no_resume:
         cfg.resume = False
     return cfg
@@ -93,13 +96,18 @@ def main():
     if cfg.resume and os.path.isfile(ckpt_path):
         ck = torch.load(ckpt_path, map_location=device)
         agent.load_state_dict(ck["agent"])
-        rnd.load_state_dict(ck["rnd"])
-        opt.load_state_dict(ck["opt"])
-        rnd_opt.load_state_dict(ck["rnd_opt"])
-        obs_rms.__dict__.update(ck["obs_rms"])
-        int_ret_rms.__dict__.update(ck["int_ret_rms"])
-        global_step, update = ck["global_step"], ck["update"]
+        if "rnd" in ck: rnd.load_state_dict(ck["rnd"])
+        if "opt" in ck: opt.load_state_dict(ck["opt"])
+        if "rnd_opt" in ck: rnd_opt.load_state_dict(ck["rnd_opt"])
+        if "obs_rms" in ck: obs_rms.__dict__.update(ck["obs_rms"])
+        if "int_ret_rms" in ck: int_ret_rms.__dict__.update(ck["int_ret_rms"])
+        global_step, update = ck.get("global_step", 0), ck.get("update", 0)
         print(f"Resumed from {ckpt_path} at step {global_step}.")
+    elif cfg.init_from and os.path.isfile(cfg.init_from):
+        ck = torch.load(cfg.init_from, map_location=device)
+        agent.load_state_dict(ck["agent"])
+        print(f"Warm-started policy from {cfg.init_from} "
+              f"(BC steps: {ck.get('bc_steps', '?')}). RND/values train fresh.")
 
     T = cfg.rollout_steps
     obs_buf = np.zeros((T, C, H, W), dtype=np.uint8)

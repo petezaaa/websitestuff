@@ -36,6 +36,55 @@ DISCRETE_ACTIONS = [
 NUM_ACTIONS = len(DISCRETE_ACTIONS)
 
 
+def discretize_action(action) -> int:
+    """Map a MineRL human action (dict of buttons + a camera delta) to the
+    nearest of our discrete actions. Used to turn demo data into labels for
+    behavioral cloning. Priority order roughly matches what dominates a frame.
+    """
+    def flag(key):
+        v = action.get(key, 0)
+        try:
+            return int(np.asarray(v).flatten()[0])
+        except Exception:
+            return int(bool(v))
+
+    cam = np.asarray(action.get("camera", [0.0, 0.0])).flatten()
+    pitch = float(cam[0]) if cam.size > 0 else 0.0
+    yaw = float(cam[1]) if cam.size > 1 else 0.0
+    cam_thresh = 5.0
+
+    attack, use = flag("attack"), flag("use")
+    forward, back = flag("forward"), flag("back")
+    left, right = flag("left"), flag("right")
+    jump, sprint = flag("jump"), flag("sprint")
+
+    if attack and forward:
+        return 14
+    if attack:
+        return 8
+    if use:
+        return 9
+    if abs(yaw) > cam_thresh and abs(yaw) >= abs(pitch):
+        return 11 if yaw > 0 else 10
+    if abs(pitch) > cam_thresh:
+        return 13 if pitch > 0 else 12
+    if forward and jump:
+        return 2
+    if forward and sprint:
+        return 3
+    if forward:
+        return 1
+    if back:
+        return 4
+    if left:
+        return 5
+    if right:
+        return 6
+    if jump:
+        return 7
+    return 0
+
+
 class GrayResizePOV(gym.ObservationWrapper):
     """dict obs -> single grayscale HxW uint8 frame from the POV image."""
 

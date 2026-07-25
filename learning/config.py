@@ -50,6 +50,7 @@ class Config:
     checkpoint_every_updates: int = 25
     log_dir: str = "runs"
     resume: bool = True           # continue from the latest checkpoint if present
+    init_from: str = ""           # warm-start policy weights (e.g. a BC checkpoint)
 
     def to_dict(self) -> dict:
         return asdict(self)
