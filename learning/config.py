@@ -43,7 +43,9 @@ class Config:
     # --- Training loop ------------------------------------------------------
     total_steps: int = 5_000_000
     seed: int = 0
-    device: str = "cuda"          # falls back to cpu automatically if no GPU
+    # "auto" picks CUDA/ROCm (NVIDIA or AMD-on-Linux), then DirectML
+    # (AMD/Intel on Windows), then CPU. Force with "cuda", "directml", or "cpu".
+    device: str = "auto"
     checkpoint_dir: str = "checkpoints"
     checkpoint_every_updates: int = 25
     log_dir: str = "runs"

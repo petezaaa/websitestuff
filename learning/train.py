@@ -20,6 +20,7 @@ import torch.nn as nn
 from torch.utils.tensorboard import SummaryWriter
 
 from config import Config
+from device import get_device
 from env import make_env, NUM_ACTIONS
 from model import ActorCritic
 from rnd import RNDModel
@@ -71,8 +72,8 @@ def main():
     np.random.seed(cfg.seed)
     torch.manual_seed(cfg.seed)
 
-    device = torch.device("cuda" if (cfg.device == "cuda" and torch.cuda.is_available()) else "cpu")
-    print(f"Device: {device}  ({torch.cuda.get_device_name(0) if device.type == 'cuda' else 'CPU only'})")
+    device, desc = get_device(cfg.device)
+    print(f"Device: {desc}")
 
     env = make_env(cfg)
     C, H, W = cfg.frame_stack, cfg.frame_size, cfg.frame_size

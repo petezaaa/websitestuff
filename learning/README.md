@@ -36,24 +36,60 @@ play.py    load a checkpoint and watch it act
 
 ## Setup
 
-You need a machine with an **NVIDIA GPU** (CUDA), **Python 3.9–3.11**, and
-**JDK 8** on the PATH (MineRL launches Minecraft 1.16 under the hood).
+You need **Python 3.9–3.11**, **JDK 8** on the PATH (MineRL launches Minecraft
+1.16), and a GPU. The device layer auto-detects NVIDIA (CUDA), **AMD (ROCm on
+Linux / DirectML on Windows)**, or falls back to CPU.
 
 ```bash
 cd learning
 python -m venv .venv && source .venv/bin/activate
+```
 
-# 1) PyTorch for YOUR CUDA version (see https://pytorch.org/get-started/locally/)
+Then install **PyTorch for your GPU** (do this *before* `requirements.txt`, and
+don't let anything reinstall a CPU-only torch over it):
+
+### AMD RX 6800 — Linux (recommended: ROCm)
+
+The RX 6800 is RDNA2 / `gfx1030`, supported by recent ROCm. Install the ROCm
+build of PyTorch (pick the rocm channel matching your installed ROCm; 6.1 shown):
+
+```bash
+pip install torch --index-url https://download.pytorch.org/whl/rocm6.1
+pip install -r requirements.txt
+
+# ROCm shows up as the "cuda" device in torch — the code already handles that.
+python -c "import torch; print(torch.cuda.is_available(), torch.version.hip)"
+
+# If you hit "invalid device function" / HIP errors, force the gfx1030 target:
+export HSA_OVERRIDE_GFX_VERSION=10.3.0
+python train.py --env MineRLTreechop-v0
+```
+
+### AMD RX 6800 — Windows (DirectML)
+
+ROCm isn't available on Windows for this card, so use DirectML:
+
+```bash
+pip install torch-directml        # pins a compatible torch build
+pip install -r requirements.txt
+python train.py --env MineRLTreechop-v0 --device directml
+```
+
+DirectML works but is slower than ROCm and a few ops may be unsupported; if
+training errors on an op, try `--device cpu` to confirm the rest runs, or switch
+to Linux+ROCm for real speed. (Honestly, for RL throughput, **Linux + ROCm on
+the RX 6800 is the better setup**.)
+
+### NVIDIA (for reference)
+
+```bash
 pip install torch --index-url https://download.pytorch.org/whl/cu121
-
-# 2) the rest
 pip install -r requirements.txt
 ```
 
-MineRL can be fiddly to install (it compiles a Minecraft mod). If `pip install
-minerl` fails, follow the official docs: https://minerl.readthedocs.io/ — the
-usual culprits are a missing JDK 8 or a headless machine without a virtual
-display (`xvfb-run -a python train.py ...`).
+MineRL can be fiddly (it compiles a Minecraft mod). If `pip install minerl`
+fails, see https://minerl.readthedocs.io/ — usual culprits are a missing JDK 8
+or a headless machine needing a virtual display (`xvfb-run -a python train.py ...`).
 
 ## Run
 

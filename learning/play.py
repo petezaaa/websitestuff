@@ -14,6 +14,7 @@ import numpy as np
 import torch
 
 from config import Config
+from device import get_device
 from env import make_env, NUM_ACTIONS
 from model import ActorCritic
 
@@ -30,7 +31,8 @@ def main():
     if args.env:
         cfg.env_id = args.env
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device, desc = get_device("auto")
+    print(f"Device: {desc}")
     ck = torch.load(args.checkpoint, map_location=device)
 
     env = make_env(cfg)
