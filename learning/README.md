@@ -91,6 +91,20 @@ MineRL can be fiddly (it compiles a Minecraft mod). If `pip install minerl`
 fails, see https://minerl.readthedocs.io/ — usual culprits are a missing JDK 8
 or a headless machine needing a virtual display (`xvfb-run -a python train.py ...`).
 
+## Verify the GPU first
+
+Before the (fiddly) MineRL install, confirm PyTorch actually sees and can
+compute on your RX 6800:
+
+```bash
+python check_gpu.py
+```
+
+It prints your torch build, the detected device (should say `[ROCm/HIP]` for the
+RX 6800 on Linux, or `[DirectML]` on Windows), and runs a small matmul on the
+GPU to prove compute works — with the `HSA_OVERRIDE_GFX_VERSION=10.3.0` tip if it
+errors.
+
 ## Run
 
 ```bash
