@@ -1,0 +1,16 @@
+# Install PyTorch FIRST, separately, for your GPU (see README.md):
+#   AMD RX 6800 / Linux (ROCm):  pip install torch --index-url https://download.pytorch.org/whl/rocm6.1
+#   AMD / Windows (DirectML):    pip install torch-directml
+#   NVIDIA (CUDA):               pip install torch --index-url https://download.pytorch.org/whl/cu121
+#
+# Then: pip install -r requirements.txt  (do NOT let this pull a CPU-only torch)
+#
+# MineRL is the Minecraft RL environment. v0.4.x targets Minecraft 1.16 and
+# needs a JDK 8 on PATH. Installation is finicky — see README.md.
+minerl==0.4.4
+gym==0.19.0
+numpy<2.0
+opencv-python
+tensorboard
+tqdm
+pyyaml
