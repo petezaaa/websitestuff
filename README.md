@@ -40,6 +40,7 @@ single `/bot` command that ties everything together.
 | `/bot auto <on\|off>` | Eat, fight mobs, respawn, protect Mending tools | Guardians |
 | `/bot drop <item\|all>` | Drop items | — |
 | `/bot equip <item>` | Hold an item | — |
+| `/bot equiparmor` | Equip the best armor you have | — |
 | `/bot inv` | List your inventory | — |
 | `/bot status` | Show the active task | — |
 | `/bot stop` | Cancel everything | — |
@@ -50,20 +51,24 @@ single `/bot` command that ties everything together.
 every tick regardless of the current task:
 - **Auto-respawn** when the bot dies.
 - **Auto-eat** when hunger drops (picks the best food, avoids poisonous ones).
-- **Auto-defend**: melees any hostile that gets into reach. Because attacks are
+- **Auto-defend**: when a hostile is near it **equips your best armor** and a
+  sword, then melees anything that gets into reach. Because attacks are
   entity-targeted (not raycast), this works even while Baritone is moving —
   handy for not getting blown up or shot mid-task.
 - **Mending/durability protection**: Baritone's `itemSaver` is set to **2**, so
   tools are dropped from use at 2 durability and never break (protects Mending
   gear). Always on; tune with the setting if you like.
 
+`KillTask` (`/bot kill`) also equips your best sword before engaging, and
+`/bot equiparmor` equips armor on demand.
+
 **Mine → deposit loop** — `/bot gather <block> <n>` mines with Baritone, and
 when the inventory fills it runs to the nearest chest, deposits *resources*
 (keeping tools/armor/food), then resumes — repeating until it has `n`.
 
-**Chest logging** — every deposit/withdraw records the chest's position and
-contents to chat and to `<gameDir>/baritonebot/chestlog.txt`. `/bot chests`
-prints the log.
+**Chest logging** — always on: whenever you (or a task) open a chest/barrel, its
+position and contents are recorded to `<gameDir>/baritonebot/chestlog.txt`.
+`/bot chests` prints the log. Deposit/withdraw also re-log after transferring.
 
 **Tool progression** — `/bot tools` chains mine/craft/smelt steps to go from
 nothing to a full set of diamond tools (wood → stone → iron → diamond). Turn on

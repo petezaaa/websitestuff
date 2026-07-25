@@ -11,6 +11,7 @@ import com.baritonebot.task.SmeltTask;
 import com.baritonebot.task.Task;
 import com.baritonebot.task.TaskManager;
 import com.baritonebot.task.DepositTask;
+import com.baritonebot.task.EquipArmorTask;
 import com.baritonebot.task.GatherRunTask;
 import com.baritonebot.task.MaterialsTask;
 import com.baritonebot.task.ProgressionTask;
@@ -79,9 +80,11 @@ public final class CommandParser {
                 case "auto":     handleAuto(t); break;
                 case "drop":     handleDrop(t, player); break;
                 case "equip":    handleEquip(t, player); break;
+                case "equiparmor":
+                case "armor":    TaskManager.start(new EquipArmorTask()); break;
                 case "inv":
                 case "inventory": ChatUtil.info(InventoryUtil.summary(player)); break;
-                case "status":   ChatUtil.info("Current task: " + TaskManager.currentName()); break;
+                case "status":   handleStatus(player); break;
                 case "stop":     TaskManager.stop("Stopped."); break;
                 case "help":     help(); break;
                 default:         ChatUtil.err("Unknown command \"" + verb + "\". Try '/bot help'.");
@@ -233,6 +236,15 @@ public final class CommandParser {
         for (String s : ChestLog.summary()) ChatUtil.info(s);
     }
 
+    private static void handleStatus(LocalPlayer player) {
+        ChatUtil.info("Task: " + TaskManager.currentName() + "  |  Auto: " + (AutoMode.isEnabled() ? "§aon§r" : "off"));
+        BlockPos p = player.blockPosition();
+        ChatUtil.info(String.format("HP %.0f/%.0f  Food %d/20  Pos %d, %d, %d",
+            player.getHealth(), player.getMaxHealth(),
+            player.getFoodData().getFoodLevel(),
+            p.getX(), p.getY(), p.getZ()));
+    }
+
     private static void handleAuto(String[] t) {
         if (t.length < 2) throw new IllegalArgumentException("Usage: /bot auto <on|off>");
         boolean on = t[1].equalsIgnoreCase("on") || t[1].equalsIgnoreCase("true") || t[1].equalsIgnoreCase("enable");
@@ -285,6 +297,7 @@ public final class CommandParser {
             "§e/bot auto <on|off> §7- eat, fight mobs, respawn, protect Mending tools",
             "§e/bot drop <item|all> §7- drop items",
             "§e/bot equip <item> §7- hold an item",
+            "§e/bot equiparmor §7- equip the best armor you have",
             "§e/bot inv §7- list inventory",
             "§e/bot status §7- show the current task",
             "§e/bot stop §7- cancel everything",

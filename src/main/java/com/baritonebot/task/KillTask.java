@@ -2,6 +2,7 @@ package com.baritonebot.task;
 
 import com.baritonebot.integration.BaritoneHelper;
 import com.baritonebot.util.EntityUtil;
+import com.baritonebot.util.WeaponUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.commands.arguments.EntityAnchorArgument;
 import net.minecraft.world.InteractionHand;
@@ -38,6 +39,14 @@ public class KillTask extends Task {
     @Override
     public String name() {
         return "kill " + count + " " + label();
+    }
+
+    @Override
+    public void onStart(Minecraft mc) {
+        try {
+            WeaponUtil.equipBestMelee(mc.player);
+        } catch (Exception ignored) {
+        }
     }
 
     @Override

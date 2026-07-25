@@ -1,14 +1,20 @@
 package com.baritonebot.auto;
 
+import com.baritonebot.chest.ChestLog;
+import com.baritonebot.chest.ContainerHelper;
 import com.baritonebot.integration.BaritoneHelper;
+import com.baritonebot.util.ArmorUtil;
 import com.baritonebot.util.EntityUtil;
 import com.baritonebot.util.EquipUtil;
+import com.baritonebot.util.WeaponUtil;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.DeathScreen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.commands.arguments.EntityAnchorArgument;
+import net.minecraft.core.BlockPos;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.LivingEntity;
+import net.minecraft.world.inventory.ChestMenu;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
@@ -30,23 +36,40 @@ public final class Guardians {
     private static final Set<String> BAD_FOOD = Set.of(
         "spider_eye", "pufferfish", "poisonous_potato", "rotten_flesh", "suspicious_stew", "chicken");
 
-    private static final String[] WEAPONS = {
-        "netherite_sword", "diamond_sword", "iron_sword", "stone_sword", "golden_sword", "wooden_sword",
-        "netherite_axe", "diamond_axe", "iron_axe"
-    };
-
     private static boolean eating = false;
     private static int eatTimeout = 0;
+    private static int armorCooldown = 0;
+    private static int lastChestContainerId = -1;
 
     public static void tick(Minecraft mc) {
+        if (mc.player == null || mc.level == null) {
+            if (eating) stopEat(mc);
+            return;
+        }
+        // Chest logging is always on, regardless of auto mode.
+        watchChests(mc);
+
         if (!AutoMode.isEnabled()) {
             if (eating) stopEat(mc);
             return;
         }
         respawn(mc);
-        if (mc.player == null || mc.level == null) return;
         eat(mc);
         defend(mc);
+    }
+
+    // --- Passive chest logging -------------------------------------------
+
+    private static void watchChests(Minecraft mc) {
+        if (mc.player.containerMenu instanceof ChestMenu menu) {
+            if (menu.containerId != lastChestContainerId) {
+                lastChestContainerId = menu.containerId;
+                BlockPos pos = ContainerHelper.findNearest(mc.level, mc.player.blockPosition(), 6);
+                if (pos != null) ChestLog.record(pos, menu);
+            }
+        } else {
+            lastChestContainerId = -1;
+        }
     }
 
     // --- Respawn ----------------------------------------------------------
@@ -108,33 +131,26 @@ public final class Guardians {
 
     private static void defend(Minecraft mc) {
         LocalPlayer player = mc.player;
+        if (armorCooldown > 0) armorCooldown--;
         if (eating) return;
         LivingEntity threat = EntityUtil.nearestHostile(10);
         if (threat == null) return;
 
+        // A threat is near — make sure we're wearing our armor.
+        if (armorCooldown == 0) {
+            ArmorUtil.equipBest(player);
+            armorCooldown = 200;
+        }
+
         double dist = player.distanceTo(threat);
         if (dist > 3.2) return; // in melee range only; Baritone controls movement
 
-        equipWeapon(player);
+        WeaponUtil.equipBestMelee(player);
         player.lookAt(EntityAnchorArgument.Anchor.EYES, threat.getEyePosition());
         if (player.getAttackStrengthScale(0f) >= 0.9f) {
             mc.gameMode.attack(player, threat);
             player.swing(InteractionHand.MAIN_HAND);
             player.resetAttackStrengthTicker();
-        }
-    }
-
-    private static void equipWeapon(LocalPlayer player) {
-        ItemStack held = player.getMainHandItem();
-        String heldName = held.isEmpty() ? "" :
-            net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(held.getItem()).getPath();
-        if (heldName.endsWith("_sword")) return; // already good
-        for (String w : WEAPONS) {
-            var opt = com.baritonebot.util.Names.item(w);
-            if (opt.isPresent() && com.baritonebot.util.InventoryUtil.count(player, opt.get()) > 0) {
-                EquipUtil.holdItem(player, opt.get());
-                return;
-            }
         }
     }
 }
