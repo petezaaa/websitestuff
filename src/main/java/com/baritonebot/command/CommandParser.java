@@ -11,6 +11,7 @@ import com.baritonebot.task.SmeltTask;
 import com.baritonebot.task.Task;
 import com.baritonebot.task.TaskManager;
 import com.baritonebot.task.AutoPlayTask;
+import com.baritonebot.task.BuildBaseTask;
 import com.baritonebot.task.DepositTask;
 import com.baritonebot.task.EquipArmorTask;
 import com.baritonebot.task.GatherRunTask;
@@ -71,6 +72,7 @@ public final class CommandParser {
                 case "build":    handleBuild(t, player); break;
                 case "materials": handleMaterials(t); break;
                 case "verify":   handleVerify(t, player); break;
+                case "base":     handleBase(t, player); break;
                 case "gather":   handleGather(t); break;
                 case "deposit":  handleDeposit(t); break;
                 case "withdraw": handleWithdraw(t); break;
@@ -207,6 +209,15 @@ public final class CommandParser {
         TaskManager.start(new VerifyTask(t[1], file, origin));
     }
 
+    private static void handleBase(String[] t, LocalPlayer player) {
+        if (t.length < 2) throw new IllegalArgumentException("Usage: /bot base <house> [x y z]");
+        File file = resolveSchematic(t[1]);
+        if (file == null) throw new IllegalStateException("Schematic \"" + t[1] + "\" not found (try cozy_house or log_cabin).");
+        BlockPos origin = player.blockPosition();
+        if (t.length >= 5) origin = new BlockPos(Integer.parseInt(t[2]), Integer.parseInt(t[3]), Integer.parseInt(t[4]));
+        TaskManager.start(new BuildBaseTask(t[1], file, origin));
+    }
+
     private static void handleGather(String[] t) {
         if (t.length < 3) throw new IllegalArgumentException("Usage: /bot gather <block> <count>");
         String block = t[1];
@@ -296,6 +307,7 @@ public final class CommandParser {
             "§e/bot craft <item> [n] §7- craft items (auto-uses a crafting table)",
             "§e/bot smelt <item> [n] [fuel] §7- smelt in a furnace",
             "§e/bot build <schematic> [x y z] §7- build a schematic (keeps redstone orientation)",
+            "§e/bot base <house> [x y z] §7- build a house schematic and make it home (cozy_house, log_cabin)",
             "§e/bot materials <schematic> §7- gather/craft/smelt what a schematic needs",
             "§e/bot verify <schematic> [x y z] §7- check a build vs schematic (redstone facing)",
             "§e/bot gather <block> <n> §7- mine + auto-deposit into chests in a loop",

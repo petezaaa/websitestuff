@@ -30,6 +30,7 @@ single `/bot` command that ties everything together.
 | `/bot craft <item> [n]` | Craft items — auto-finds/places a crafting table for 3×3 recipes | Custom crafting |
 | `/bot smelt <item> [n] [fuel]` | Smelt in a furnace — auto-finds/places one, auto-fuels | Custom smelting |
 | `/bot build <name> [x y z]` | Build a schematic (keeps redstone orientation) | Baritone builder |
+| `/bot base <house> [x y z]` | Build a house schematic and register it as home | Custom |
 | `/bot materials <name>` | Gather/craft/smelt what a schematic needs | Custom planner |
 | `/bot verify <name> [x y z]` | Check a build vs schematic, incl. redstone facing | Custom |
 | `/bot gather <block> <n>` | Mine, then return to a chest to deposit, on a loop | Baritone + custom |
@@ -110,8 +111,14 @@ states (WorldEdit/Litematica saves do).
   the schematics section — and reports anything it couldn't obtain.
 - `/bot verify <name> [x y z]` compares the built structure against the
   schematic and reports **wrong block / wrong orientation / missing**, so you can
-  confirm the redstone is oriented correctly. Two samples are included:
-  `starter_shack` and `redstone_demo` (a piston + repeater + redstone-block line).
+  confirm the redstone is oriented correctly.
+- `/bot base <house>` builds a **ready-made house** schematic (with chest,
+  furnace, crafting table, bed) and registers its containers/bed as the bot's
+  **home base**, so it then stashes loot and sleeps there. Two houses ship in
+  `schematics/`: `cozy_house` and `log_cabin`. Run `/bot materials <house>`
+  first to gather the blocks.
+
+Included schematics: `cozy_house`, `log_cabin`, `starter_shack`, `redstone_demo`.
 
 Only **one task runs at a time**. Issuing a new command (or `/bot stop`) cancels
 the current one and halts Baritone cleanly.
