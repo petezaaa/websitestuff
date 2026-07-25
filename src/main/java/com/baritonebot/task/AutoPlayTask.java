@@ -1,23 +1,33 @@
 package com.baritonebot.task;
 
 import com.baritonebot.auto.AutoMode;
+import com.baritonebot.auto.HomeBase;
 import com.baritonebot.util.ChatUtil;
 import com.baritonebot.util.Names;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.ItemStack;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
+import java.util.function.Supplier;
 
 /**
  * Free-play "AI player" mode: for a set duration (default 24h) the bot keeps
  * itself alive (auto mode) and, whenever idle, picks a human-like activity —
- * gather wood, craft a pickaxe, mine, build a random structure, hunt mobs, or
- * explore — based on its current inventory plus some randomness. It runs child
- * tasks one at a time and simply chooses the next when each finishes.
+ * gather wood, craft a pickaxe, set up a home base, mine, build a random
+ * structure, hunt mobs, or explore — based on its current inventory plus some
+ * randomness. It runs child tasks one at a time and chooses the next when each
+ * finishes.
+ *
+ * Once it has a pickaxe and some wood it establishes a base (crafting table,
+ * chest, furnace, and a bed if it has one), then periodically stashes excess
+ * loot in the base chest and sleeps there at night to stay safe from mobs.
  *
  * Great for leaving it running to see what it "decides" to make over time.
  */
@@ -29,6 +39,7 @@ public class AutoPlayTask extends Task {
     private long elapsed;
     private Task child;
     private int idleCooldown;
+    private long noSleepUntil;
 
     public AutoPlayTask(double hours) {
         this.durationTicks = (long) (Math.max(0.01, hours) * 3600 * 20);
@@ -98,6 +109,22 @@ public class AutoPlayTask extends Task {
             return new CraftTask("wooden_pickaxe", 1);
         }
 
+        // Set up a home base once we have a pickaxe and a little wood.
+        if (hasPick && !HomeBase.isEstablished() && logs >= 3) {
+            return buildBase();
+        }
+
+        // Sleep through the night at the base bed to stay safe from mobs.
+        if (HomeBase.bed() != null && SleepTask.isNight(mc.level) && elapsed >= noSleepUntil) {
+            noSleepUntil = elapsed + 600;
+            return new SleepTask();
+        }
+
+        // Stash excess loot in the base chest when the pack is full.
+        if (HomeBase.isEstablished() && isInventoryFull(player)) {
+            return stashAtBase();
+        }
+
         int buildBlocks = countPlaceable(player);
         int roll = rng.nextInt(100);
 
@@ -115,6 +142,33 @@ public class AutoPlayTask extends Task {
             return new KillTask(null, 3);
         }
         return new MineTask("wood", 6, Names.blocks("wood"));
+    }
+
+    /** Craft and place a crafting table, chest, furnace (and a bed if we have one). */
+    private Task buildBase() {
+        List<Supplier<Task>> steps = new ArrayList<>();
+        steps.add(() -> new CraftTask("crafting_table", 1));
+        steps.add(() -> new CraftTask("chest", 1));
+        steps.add(() -> new CraftTask("furnace", 1));
+        steps.add(PlaceBaseTask::new);
+        return new SequenceTask("build base", steps, false);
+    }
+
+    /** Walk home and deposit resources into the base chest. */
+    private Task stashAtBase() {
+        BlockPos home = HomeBase.home();
+        List<Supplier<Task>> steps = new ArrayList<>();
+        if (home != null) steps.add(() -> new GotoTask(home.getX(), home.getY(), home.getZ()));
+        steps.add(DepositTask::resources);
+        return new SequenceTask("stash at base", steps, false);
+    }
+
+    private boolean isInventoryFull(LocalPlayer player) {
+        Inventory inv = player.getInventory();
+        for (int i = 0; i < 36; i++) {
+            if (inv.getItem(i).isEmpty()) return false;
+        }
+        return true;
     }
 
     // --- inventory helpers ------------------------------------------------

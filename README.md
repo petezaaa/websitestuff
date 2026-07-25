@@ -81,8 +81,12 @@ automatically) and, whenever it's idle, picks a human-like activity based on its
 inventory plus randomness:
 - gather wood when it's low,
 - craft a pickaxe if it doesn't have one,
+- **set up a home base** — crafts and places a crafting table, chest, furnace
+  (and a bed if it has one) once it has a pickaxe and some wood,
 - mine cobblestone/stone,
 - **build a random structure** out of whatever block it has the most of,
+- **stash excess loot** in the base chest when its pack fills up,
+- **sleep at the base** through the night to stay safe from mobs,
 - hunt nearby mobs,
 - or wander and explore.
 
