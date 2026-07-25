@@ -24,3 +24,11 @@ libs/*.jar
 # OS
 .DS_Store
 Thumbs.db
+
+# Python (learning/)
+__pycache__/
+*.pyc
+learning/.venv/
+learning/checkpoints/
+learning/runs/
+

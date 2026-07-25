@@ -202,6 +202,16 @@ Launch, load a world, and type `/bot help`.
 - **Schematics**: see [`schematics/README.md`](schematics/README.md). A valid
   sample (`starter_shack.schem`) is included.
 
+## Learning / RL agent (separate, GPU)
+
+There's also a **from-scratch reinforcement-learning agent** in
+[`learning/`](learning/README.md) — a PyTorch/CUDA scaffold that *learns* to play
+Minecraft from the screen using **PPO + curiosity (RND)** on your GPU. It's a
+different paradigm from this mod (it learns behaviour instead of running scripted
+behaviour, and targets MineRL/Minecraft 1.16), so it lives in its own folder with
+its own README and honest expectations. Use whichever fits: scripted-and-capable
+(this mod) or learning-and-curious (`learning/`).
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

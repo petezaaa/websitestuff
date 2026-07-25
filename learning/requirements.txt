@@ -1,0 +1,15 @@
+# Install PyTorch with CUDA separately for your GPU/driver from
+# https://pytorch.org/get-started/locally/  e.g.:
+#   pip install torch --index-url https://download.pytorch.org/whl/cu121
+#
+# Then: pip install -r requirements.txt
+#
+# MineRL is the Minecraft RL environment. v0.4.x targets Minecraft 1.16 and
+# needs a JDK 8 on PATH. Installation is finicky — see README.md.
+minerl==0.4.4
+gym==0.19.0
+numpy<2.0
+opencv-python
+tensorboard
+tqdm
+pyyaml
