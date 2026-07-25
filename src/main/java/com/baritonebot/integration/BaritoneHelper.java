@@ -2,6 +2,7 @@ package com.baritonebot.integration;
 
 import baritone.api.BaritoneAPI;
 import baritone.api.IBaritone;
+import baritone.api.Settings;
 import baritone.api.pathing.goals.GoalBlock;
 import baritone.api.pathing.goals.GoalGetToBlock;
 import baritone.api.pathing.goals.GoalNear;
@@ -27,8 +28,39 @@ public final class BaritoneHelper {
 
     private BaritoneHelper() {}
 
+    private static boolean configured = false;
+
     public static IBaritone baritone() {
         return BaritoneAPI.getProvider().getPrimaryBaritone();
+    }
+
+    /**
+     * Apply our preferred Baritone settings once. Notably enables itemSaver so
+     * tools are dropped before breaking — set to 2 durability, this protects
+     * Mending tools by never using them below 2 points. Also lets Baritone pull
+     * required items into the hotbar for mining/building.
+     */
+    public static void configureDefaults() {
+        if (configured) return;
+        try {
+            Settings s = BaritoneAPI.getSettings();
+            s.itemSaver.value = true;
+            s.itemSaverThreshold.value = 2;
+            s.allowInventory.value = true;
+            configured = true;
+        } catch (Throwable ignored) {
+            // Baritone may be absent in a dev launch without it installed.
+        }
+    }
+
+    /** Set the durability at which tools stop being used (Mending protection). */
+    public static void setItemSaverThreshold(int durability) {
+        try {
+            Settings s = BaritoneAPI.getSettings();
+            s.itemSaver.value = durability > 0;
+            s.itemSaverThreshold.value = Math.max(0, durability);
+        } catch (Throwable ignored) {
+        }
     }
 
     // --- Movement ---------------------------------------------------------

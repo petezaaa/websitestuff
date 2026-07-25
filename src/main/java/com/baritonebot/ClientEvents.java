@@ -1,7 +1,10 @@
 package com.baritonebot;
 
+import com.baritonebot.auto.Guardians;
 import com.baritonebot.command.BotCommands;
+import com.baritonebot.integration.BaritoneHelper;
 import com.baritonebot.task.TaskManager;
+import net.minecraft.client.Minecraft;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.RegisterClientCommandsEvent;
 import net.minecraftforge.event.TickEvent;
@@ -25,8 +28,10 @@ public final class ClientEvents {
 
     @SubscribeEvent
     public static void onClientTick(TickEvent.ClientTickEvent event) {
-        if (event.phase == TickEvent.Phase.END) {
-            TaskManager.tick();
-        }
+        if (event.phase != TickEvent.Phase.END) return;
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level != null) BaritoneHelper.configureDefaults();
+        Guardians.tick(mc);
+        TaskManager.tick();
     }
 }

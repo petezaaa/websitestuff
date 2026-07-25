@@ -29,12 +29,61 @@ single `/bot` command that ties everything together.
 | `/bot kill [target] [n]` | Kill nearest hostiles, or *n* of a named mob | Custom combat |
 | `/bot craft <item> [n]` | Craft items — auto-finds/places a crafting table for 3×3 recipes | Custom crafting |
 | `/bot smelt <item> [n] [fuel]` | Smelt in a furnace — auto-finds/places one, auto-fuels | Custom smelting |
-| `/bot build <name> [x y z]` | Build a schematic from `./schematics` | Baritone builder |
+| `/bot build <name> [x y z]` | Build a schematic (keeps redstone orientation) | Baritone builder |
+| `/bot materials <name>` | Gather/craft/smelt what a schematic needs | Custom planner |
+| `/bot verify <name> [x y z]` | Check a build vs schematic, incl. redstone facing | Custom |
+| `/bot gather <block> <n>` | Mine, then return to a chest to deposit, on a loop | Baritone + custom |
+| `/bot deposit [item\|all\|resources]` | Deposit into nearest chest (logs contents) | Custom |
+| `/bot withdraw <item> [n]` | Take items from nearest chest | Custom |
+| `/bot chests` | List logged chest contents | Custom |
+| `/bot tools` | Auto-progress wood → stone → iron → diamond tools | Composed |
+| `/bot auto <on\|off>` | Eat, fight mobs, respawn, protect Mending tools | Guardians |
 | `/bot drop <item\|all>` | Drop items | — |
 | `/bot equip <item>` | Hold an item | — |
 | `/bot inv` | List your inventory | — |
 | `/bot status` | Show the active task | — |
 | `/bot stop` | Cancel everything | — |
+
+## Autonomous features
+
+**Auto / survival mode** — `/bot auto on` turns on background guardians that run
+every tick regardless of the current task:
+- **Auto-respawn** when the bot dies.
+- **Auto-eat** when hunger drops (picks the best food, avoids poisonous ones).
+- **Auto-defend**: melees any hostile that gets into reach. Because attacks are
+  entity-targeted (not raycast), this works even while Baritone is moving —
+  handy for not getting blown up or shot mid-task.
+- **Mending/durability protection**: Baritone's `itemSaver` is set to **2**, so
+  tools are dropped from use at 2 durability and never break (protects Mending
+  gear). Always on; tune with the setting if you like.
+
+**Mine → deposit loop** — `/bot gather <block> <n>` mines with Baritone, and
+when the inventory fills it runs to the nearest chest, deposits *resources*
+(keeping tools/armor/food), then resumes — repeating until it has `n`.
+
+**Chest logging** — every deposit/withdraw records the chest's position and
+contents to chat and to `<gameDir>/baritonebot/chestlog.txt`. `/bot chests`
+prints the log.
+
+**Tool progression** — `/bot tools` chains mine/craft/smelt steps to go from
+nothing to a full set of diamond tools (wood → stone → iron → diamond). Turn on
+`/bot auto on` first so it survives the trip.
+
+## Redstone & schematics
+
+Baritone's builder places blocks using the **full block state** stored in the
+schematic, so pistons, repeaters, comparators, observers, etc. come out with the
+correct **facing / delay / mode** — as long as the schematic contains those
+states (WorldEdit/Litematica saves do).
+
+- `/bot materials <name>` reads a schematic, tallies the blocks it needs,
+  subtracts your inventory, then **mines raw blocks and crafts the rest**
+  (pistons, slabs, redstone components, ...). It's best-effort — see the note in
+  the schematics section — and reports anything it couldn't obtain.
+- `/bot verify <name> [x y z]` compares the built structure against the
+  schematic and reports **wrong block / wrong orientation / missing**, so you can
+  confirm the redstone is oriented correctly. Two samples are included:
+  `starter_shack` and `redstone_demo` (a piston + repeater + redstone-block line).
 
 Only **one task runs at a time**. Issuing a new command (or `/bot stop`) cancels
 the current one and halts Baritone cleanly.
@@ -55,12 +104,20 @@ com.baritonebot
 │   └── CommandParser     tokenizes args -> a Task or one-shot action
 ├── task
 │   ├── Task / TaskResult / TaskManager     one active task, tick loop
+│   ├── SequenceTask      runs child tasks in order (composes the rest)
 │   ├── DelegatedTask     base for "hand off to Baritone, watch for done"
 │   ├── GotoTask / MineTask / BuildTask     Baritone-backed
 │   ├── FollowTask / ExploreTask            Baritone-backed (open-ended)
 │   ├── KillTask          chase + attack with correct swing timing
 │   ├── CraftTask         table detect/place + recipe-book autofill
-│   └── SmeltTask         furnace detect/place + load fuel/input + collect
+│   ├── SmeltTask         furnace detect/place + load fuel/input + collect
+│   ├── Deposit/WithdrawTask   chest transfer + logging
+│   ├── GatherRunTask     mine → return → deposit loop
+│   ├── Materials/VerifyTask   schematic materials + build verification
+│   └── ProgressionTask   wood → stone → iron → diamond tools
+├── auto                  AutoMode + Guardians (respawn/eat/defend)
+├── chest                 ChestLog + container helpers
+├── schematic             SchematicData (Sponge .schem parser)
 ├── integration
 │   └── BaritoneHelper    the ONLY file that touches the Baritone API
 └── util                  names, entities, inventory, menus, placement, chat

@@ -28,8 +28,16 @@ your Minecraft instance:
 
 So copy the files you want to build into `.minecraft/schematics/`.
 
-## Included sample
+## Related commands
 
-- `starter_shack.schem` — a 5×4×5 hollow cobblestone hut with a doorway, a
-  valid Sponge v2 file you can use to test `/bot build starter_shack`.
-  (You'll need cobblestone in your inventory for Baritone to place.)
+- `/bot build <name> [x y z]` — build it (Baritone keeps redstone orientation).
+- `/bot materials <name>` — gather/craft/smelt the materials it needs (best-effort).
+- `/bot verify <name> [x y z]` — compare the built structure to the schematic,
+  including redstone facing/delay/mode.
+
+## Included samples
+
+- `starter_shack.schem` — a 5×4×5 hollow cobblestone hut with a doorway.
+  Test with `/bot build starter_shack` (needs cobblestone in inventory).
+- `redstone_demo.schem` — a tiny piston + repeater + redstone-block line, handy
+  for testing `/bot verify redstone_demo` and orientation handling.

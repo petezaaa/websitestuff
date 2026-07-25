@@ -10,6 +10,14 @@ import com.baritonebot.task.MineTask;
 import com.baritonebot.task.SmeltTask;
 import com.baritonebot.task.Task;
 import com.baritonebot.task.TaskManager;
+import com.baritonebot.task.DepositTask;
+import com.baritonebot.task.GatherRunTask;
+import com.baritonebot.task.MaterialsTask;
+import com.baritonebot.task.ProgressionTask;
+import com.baritonebot.task.VerifyTask;
+import com.baritonebot.task.WithdrawTask;
+import com.baritonebot.auto.AutoMode;
+import com.baritonebot.chest.ChestLog;
 import com.baritonebot.util.ActionUtil;
 import com.baritonebot.util.ChatUtil;
 import com.baritonebot.util.EntityUtil;
@@ -59,6 +67,16 @@ public final class CommandParser {
                 case "craft":    handleCraft(t); break;
                 case "smelt":    handleSmelt(t); break;
                 case "build":    handleBuild(t, player); break;
+                case "materials": handleMaterials(t); break;
+                case "verify":   handleVerify(t, player); break;
+                case "gather":   handleGather(t); break;
+                case "deposit":  handleDeposit(t); break;
+                case "withdraw": handleWithdraw(t); break;
+                case "chests":
+                case "chestlog": handleChests(); break;
+                case "tools":
+                case "progress": TaskManager.start(new ProgressionTask()); break;
+                case "auto":     handleAuto(t); break;
                 case "drop":     handleDrop(t, player); break;
                 case "equip":    handleEquip(t, player); break;
                 case "inv":
@@ -166,6 +184,63 @@ public final class CommandParser {
         else ChatUtil.err("I don't have \"" + t[1] + "\".");
     }
 
+    private static void handleMaterials(String[] t) {
+        if (t.length < 2) throw new IllegalArgumentException("Usage: /bot materials <schematic>");
+        File file = resolveSchematic(t[1]);
+        if (file == null) throw new IllegalStateException("Schematic \"" + t[1] + "\" not found.");
+        TaskManager.start(new MaterialsTask(t[1], file));
+    }
+
+    private static void handleVerify(String[] t, LocalPlayer player) {
+        if (t.length < 2) throw new IllegalArgumentException("Usage: /bot verify <schematic> [x y z]");
+        File file = resolveSchematic(t[1]);
+        if (file == null) throw new IllegalStateException("Schematic \"" + t[1] + "\" not found.");
+        BlockPos origin = player.blockPosition();
+        if (t.length >= 5) origin = new BlockPos(Integer.parseInt(t[2]), Integer.parseInt(t[3]), Integer.parseInt(t[4]));
+        TaskManager.start(new VerifyTask(t[1], file, origin));
+    }
+
+    private static void handleGather(String[] t) {
+        if (t.length < 3) throw new IllegalArgumentException("Usage: /bot gather <block> <count>");
+        String block = t[1];
+        int count = Integer.parseInt(t[2]);
+        List<Block> blocks = Names.blocks(block);
+        if (blocks.isEmpty()) throw new IllegalStateException("Unknown block \"" + block + "\".");
+        TaskManager.start(new GatherRunTask(block, count, blocks));
+    }
+
+    private static void handleDeposit(String[] t) {
+        if (t.length < 2 || t[1].equalsIgnoreCase("resources")) {
+            TaskManager.start(DepositTask.resources());
+            return;
+        }
+        if (t[1].equalsIgnoreCase("all")) {
+            TaskManager.start(new DepositTask(DepositTask.Mode.ALL, null));
+            return;
+        }
+        Item item = Names.item(t[1]).orElseThrow(() -> new IllegalStateException("Unknown item \"" + t[1] + "\"."));
+        TaskManager.start(new DepositTask(DepositTask.Mode.ITEM, item));
+    }
+
+    private static void handleWithdraw(String[] t) {
+        if (t.length < 2) throw new IllegalArgumentException("Usage: /bot withdraw <item> [count]");
+        Item item = Names.item(t[1]).orElseThrow(() -> new IllegalStateException("Unknown item \"" + t[1] + "\"."));
+        int count = t.length >= 3 ? Integer.parseInt(t[2]) : 1;
+        TaskManager.start(new WithdrawTask(item, count));
+    }
+
+    private static void handleChests() {
+        for (String s : ChestLog.summary()) ChatUtil.info(s);
+    }
+
+    private static void handleAuto(String[] t) {
+        if (t.length < 2) throw new IllegalArgumentException("Usage: /bot auto <on|off>");
+        boolean on = t[1].equalsIgnoreCase("on") || t[1].equalsIgnoreCase("true") || t[1].equalsIgnoreCase("enable");
+        AutoMode.set(on);
+        if (on) ChatUtil.ok("Auto mode ON — eating, fighting mobs, respawning; Mending tools protected at 2 durability.");
+        else ChatUtil.ok("Auto mode OFF.");
+    }
+
     // --- Helpers ----------------------------------------------------------
 
     /** Look for <name>.schem / .schematic / .litematic under ./schematics. */
@@ -199,7 +274,15 @@ public final class CommandParser {
             "§e/bot kill [target] [n] §7- kill hostiles, or n of a named mob",
             "§e/bot craft <item> [n] §7- craft items (auto-uses a crafting table)",
             "§e/bot smelt <item> [n] [fuel] §7- smelt in a furnace",
-            "§e/bot build <schematic> [x y z] §7- build a schematic from ./schematics",
+            "§e/bot build <schematic> [x y z] §7- build a schematic (keeps redstone orientation)",
+            "§e/bot materials <schematic> §7- gather/craft/smelt what a schematic needs",
+            "§e/bot verify <schematic> [x y z] §7- check a build vs schematic (redstone facing)",
+            "§e/bot gather <block> <n> §7- mine + auto-deposit into chests in a loop",
+            "§e/bot deposit [item|all|resources] §7- deposit into nearest chest (logs contents)",
+            "§e/bot withdraw <item> [n] §7- take items from nearest chest",
+            "§e/bot chests §7- list logged chest contents",
+            "§e/bot tools §7- auto-progress wood → stone → iron → diamond tools",
+            "§e/bot auto <on|off> §7- eat, fight mobs, respawn, protect Mending tools",
             "§e/bot drop <item|all> §7- drop items",
             "§e/bot equip <item> §7- hold an item",
             "§e/bot inv §7- list inventory",
