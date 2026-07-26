@@ -83,6 +83,8 @@ public final class CommandParser {
                 case "play":
                 case "sim":
                 case "autoplay": handlePlay(t); break;
+                case "survive":
+                case "survival": handleSurvive(t); break;
                 case "auto":     handleAuto(t); break;
                 case "drop":     handleDrop(t, player); break;
                 case "equip":    handleEquip(t, player); break;
@@ -265,6 +267,11 @@ public final class CommandParser {
         TaskManager.start(new AutoPlayTask(hours));
     }
 
+    private static void handleSurvive(String[] t) {
+        double hours = t.length >= 2 ? Double.parseDouble(t[1]) : 24.0;
+        TaskManager.start(new AutoPlayTask(hours, true));
+    }
+
     private static void handleAuto(String[] t) {
         if (t.length < 2) throw new IllegalArgumentException("Usage: /bot auto <on|off>");
         boolean on = t[1].equalsIgnoreCase("on") || t[1].equalsIgnoreCase("true") || t[1].equalsIgnoreCase("enable");
@@ -316,6 +323,7 @@ public final class CommandParser {
             "§e/bot chests §7- list logged chest contents",
             "§e/bot tools §7- auto-progress wood → stone → iron → diamond tools",
             "§e/bot play [hours] §7- free-play: gather, craft, build random stuff, fight (default 24h)",
+            "§e/bot survive [hours] §7- lean loop: roam, kill, mine, hunt food, base to respawn/store",
             "§e/bot auto <on|off> §7- eat, fight mobs, respawn, protect Mending tools",
             "§e/bot drop <item|all> §7- drop items",
             "§e/bot equip <item> §7- hold an item",

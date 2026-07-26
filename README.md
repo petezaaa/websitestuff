@@ -39,6 +39,7 @@ single `/bot` command that ties everything together.
 | `/bot chests` | List logged chest contents | Custom |
 | `/bot tools` | Auto-progress wood → stone → iron → diamond tools | Composed |
 | `/bot play [hours]` | Free-play: gather, craft, build random stuff, fight, explore | Composed |
+| `/bot survive [hours]` | Lean survival loop: roam, kill, mine, hunt food, base to respawn/store | Composed |
 | `/bot auto <on\|off>` | Eat, fight mobs, respawn, protect Mending tools | Guardians |
 | `/bot drop <item\|all>` | Drop items | — |
 | `/bot equip <item>` | Hold an item | — |
@@ -97,6 +98,14 @@ temporary schematic in `<gameDir>/baritonebot/generated/`, and built by
 Baritone. Each decision is announced in chat (`[Free-play] build a random hut`),
 so you can leave it running and watch what it decides to make over time. Stop any
 time with `/bot stop`.
+
+**Survival loop** — `/bot survive [hours]` is a leaner, more reactive version:
+no random building or diamond-chasing, just **roam, kill hostiles, mine, hunt
+animals for food, and keep a base to respawn at and store loot in**. It reacts to
+danger and hunger first, then cycles through mining/hunting/exploring, stashing
+at the base when full and sleeping at night if it has a bed. Best paired with the
+`keepInventory` gamerule on (`/gamerule keepInventory true`) so death just sends
+it home to keep going.
 
 ## Redstone & schematics
 

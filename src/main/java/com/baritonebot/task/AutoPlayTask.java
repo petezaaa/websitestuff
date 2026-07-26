@@ -3,6 +3,7 @@ package com.baritonebot.task;
 import com.baritonebot.auto.AutoMode;
 import com.baritonebot.auto.HomeBase;
 import com.baritonebot.util.ChatUtil;
+import com.baritonebot.util.EntityUtil;
 import com.baritonebot.util.Names;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
@@ -34,6 +35,7 @@ import java.util.function.Supplier;
 public class AutoPlayTask extends Task {
 
     private final long durationTicks;
+    private final boolean survival;
     private final Random rng = new Random();
 
     private long elapsed;
@@ -42,18 +44,32 @@ public class AutoPlayTask extends Task {
     private long noSleepUntil;
 
     public AutoPlayTask(double hours) {
+        this(hours, false);
+    }
+
+    public AutoPlayTask(double hours, boolean survival) {
         this.durationTicks = (long) (Math.max(0.01, hours) * 3600 * 20);
+        this.survival = survival;
+    }
+
+    private String tag() {
+        return survival ? "Survive" : "Free-play";
     }
 
     @Override
     public String name() {
-        return "free-play" + (child != null ? " (" + child.name() + ")" : "");
+        return (survival ? "survival" : "free-play") + (child != null ? " (" + child.name() + ")" : "");
     }
 
     @Override
     public void onStart(Minecraft mc) {
         AutoMode.set(true); // eat, fight, respawn, protect tools while it plays
-        ChatUtil.info("Free-play mode ON. I'll gather, craft, build, fight and explore. '/bot stop' to end.");
+        if (survival) {
+            ChatUtil.info("Survival mode ON — roaming, killing, mining, hunting food, storing at a base. "
+                + "Set keepInventory true so dying isn't costly. '/bot stop' to end.");
+        } else {
+            ChatUtil.info("Free-play mode ON. I'll gather, craft, build, fight and explore. '/bot stop' to end.");
+        }
     }
 
     @Override
@@ -68,11 +84,11 @@ public class AutoPlayTask extends Task {
             child = pick(mc);
             try {
                 child.onStart(mc);
-                ChatUtil.info("[Free-play] " + child.name());
+                ChatUtil.info("[" + tag() + "] " + child.name());
             } catch (Exception e) {
-                ChatUtil.warn("[Free-play] skipped: " + (e.getMessage() != null ? e.getMessage() : "couldn't start"));
+                ChatUtil.warn("[" + tag() + "] skipped: " + (e.getMessage() != null ? e.getMessage() : "couldn't start"));
                 child = null;
-                idleCooldown = 20;
+                idleCooldown = survival ? 10 : 20;
             }
             return TaskResult.running();
         }
@@ -90,15 +106,85 @@ public class AutoPlayTask extends Task {
         } catch (Exception ignored) {
         }
         if (r.state == TaskResult.State.FAILED) {
-            ChatUtil.warn("[Free-play] " + child.name() + ": " + r.message);
+            ChatUtil.warn("[" + tag() + "] " + child.name() + ": " + r.message);
         }
         child = null;
-        idleCooldown = 10; // brief pause between activities
+        idleCooldown = survival ? 3 : 10; // survival cycles faster / more fluid
         return TaskResult.running();
     }
 
-    /** Choose the next activity from the current state, with some randomness. */
+    /** Choose the next activity — survival is a leaner loop than full free-play. */
     private Task pick(Minecraft mc) {
+        return survival ? pickSurvival(mc) : pickFreePlay(mc);
+    }
+
+    /** Lean survival loop: react to danger, keep fed, mine, roam, store, respawn. */
+    private Task pickSurvival(Minecraft mc) {
+        LocalPlayer player = mc.player;
+
+        // React to danger immediately.
+        if (EntityUtil.nearestHostile(18) != null) return new KillTask(null, 1);
+
+        // Get food when hungry and none is on hand.
+        if (player.getFoodData().getFoodLevel() < 14 && !hasFood(player)) {
+            String animal = findFoodAnimal(24);
+            if (animal != null) return new KillTask(animal, 2);
+        }
+
+        // Minimal bootstrap: a pickaxe so it can actually mine.
+        int slogs = countSuffix(player, "_log");
+        if (slogs < 2) return new MineTask("wood", 4, Names.blocks("wood"));
+        boolean spick = hasSuffix(player, "_pickaxe");
+        if (!spick && (countSuffix(player, "_planks") >= 2 || slogs >= 1)) {
+            return new CraftTask("wooden_pickaxe", 1);
+        }
+
+        // A base to respawn at and store stuff.
+        if (!HomeBase.isEstablished() && spick && slogs >= 3) return buildBase();
+
+        // Sleep at night if it has a bed (sets respawn point, avoids mobs).
+        if (HomeBase.bed() != null && SleepTask.isNight(mc.level) && elapsed >= noSleepUntil) {
+            noSleepUntil = elapsed + 600;
+            return new SleepTask();
+        }
+
+        // Store when the pack is full.
+        if (HomeBase.isEstablished() && isInventoryFull(player)) return stashAtBase();
+
+        // Roam: mostly kill / mine / hunt, some exploring.
+        int roll = rng.nextInt(100);
+        if (roll < 35) {
+            if (EntityUtil.nearestHostile(40) != null) return new KillTask(null, 2);
+            return new MineTask("stone", 20, Names.blocks("stone"));
+        }
+        if (roll < 65) return new MineTask("stone", 20, Names.blocks("stone"));
+        if (roll < 80) {
+            String a = findFoodAnimal(32);
+            if (a != null) return new KillTask(a, 2);
+            return new MineTask("iron_ore", 4, Names.blocks("iron_ore"));
+        }
+        if (roll < 92) return new ExploreTask((int) player.getX(), (int) player.getZ());
+        return new MineTask("iron_ore", 4, Names.blocks("iron_ore"));
+    }
+
+    private boolean hasFood(LocalPlayer player) {
+        Inventory inv = player.getInventory();
+        for (int i = 0; i < 36; i++) {
+            ItemStack s = inv.getItem(i);
+            if (!s.isEmpty() && s.getItem().isEdible()) return true;
+        }
+        return false;
+    }
+
+    private String findFoodAnimal(double radius) {
+        for (String name : new String[]{"cow", "pig", "chicken", "sheep", "rabbit"}) {
+            if (EntityUtil.nearestNamed(name, radius) != null) return name;
+        }
+        return null;
+    }
+
+    /** Full free-play: also builds random structures and works toward better gear. */
+    private Task pickFreePlay(Minecraft mc) {
         LocalPlayer player = mc.player;
 
         int logs = countSuffix(player, "_log");
