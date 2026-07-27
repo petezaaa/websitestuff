@@ -49,6 +49,10 @@ public class PlaceBaseTask extends Task {
                 if (bed != null) place(player, bed, HomeBase::setBed);
                 return TaskResult.running();
             }
+            case 4:
+            case 5:
+                place(player, Items.TORCH, null); // light the base so mobs don't spawn
+                return TaskResult.running();
             default:
                 HomeBase.markEstablished(player.blockPosition());
                 return TaskResult.success(placed.isEmpty()

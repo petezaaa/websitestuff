@@ -99,13 +99,15 @@ Baritone. Each decision is announced in chat (`[Free-play] build a random hut`),
 so you can leave it running and watch what it decides to make over time. Stop any
 time with `/bot stop`.
 
-**Survival loop** — `/bot survive [hours]` is a leaner, more reactive version:
-no random building or diamond-chasing, just **roam, kill hostiles, mine, hunt
-animals for food, and keep a base to respawn at and store loot in**. It reacts to
-danger and hunger first, then cycles through mining/hunting/exploring, stashing
-at the base when full and sleeping at night if it has a bed. Best paired with the
-`keepInventory` gamerule on (`/gamerule keepInventory true`) so death just sends
-it home to keep going.
+**Survival loop** — `/bot survive [hours]` is the leaner, more reactive flagship
+mode: no random building or diamond-chasing, just **roam, kill hostiles, mine,
+hunt animals for food, and keep a base to respawn at and store loot in**. It
+reacts to danger and hunger first, then cycles through mining/hunting/exploring,
+stashing at the base when full and sleeping at night if it has a bed. It also
+**cooks its raw meat** at the base furnace for better food, and **lights the base
+with torches** so mobs don't spawn there. Best paired with the `keepInventory`
+gamerule (`/gamerule keepInventory true`) so death just sends it home to keep
+going.
 
 ## Redstone & schematics
 

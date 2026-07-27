@@ -131,6 +131,12 @@ public class AutoPlayTask extends Task {
             if (animal != null) return new KillTask(animal, 2);
         }
 
+        // Cook a stack of raw meat into better food (once there's a base furnace).
+        if (HomeBase.isEstablished()) {
+            String meat = bestRawMeat(player, 5);
+            if (meat != null) return new SmeltTask(meat, countItemName(player, meat), null);
+        }
+
         // Minimal bootstrap: a pickaxe so it can actually mine.
         int slogs = countSuffix(player, "_log");
         if (slogs < 2) return new MineTask("wood", 4, Names.blocks("wood"));
@@ -181,6 +187,32 @@ public class AutoPlayTask extends Task {
             if (EntityUtil.nearestNamed(name, radius) != null) return name;
         }
         return null;
+    }
+
+    /** The raw meat item we have the most of (>= min), or null. Smelting cooks it. */
+    private String bestRawMeat(LocalPlayer player, int min) {
+        String best = null;
+        int bestCount = min - 1;
+        for (String n : new String[]{"beef", "porkchop", "chicken", "mutton", "rabbit", "cod", "salmon"}) {
+            int c = countItemName(player, n);
+            if (c > bestCount) {
+                bestCount = c;
+                best = n;
+            }
+        }
+        return best;
+    }
+
+    private int countItemName(LocalPlayer player, String name) {
+        Inventory inv = player.getInventory();
+        int total = 0;
+        for (int i = 0; i < 36; i++) {
+            ItemStack s = inv.getItem(i);
+            if (!s.isEmpty() && BuiltInRegistries.ITEM.getKey(s.getItem()).getPath().equals(name)) {
+                total += s.getCount();
+            }
+        }
+        return total;
     }
 
     /** Full free-play: also builds random structures and works toward better gear. */
